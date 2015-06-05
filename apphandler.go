@@ -107,6 +107,12 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	
     if  errServer != nil {
+
+		if tmpClerr, ok := errServer.(*Clerr); ok {
+			handleClientError(w, tmpClerr, outMime)
+			return
+		}
+		
     	// Controller methods can return client or server errors
     	//
     	// If a server error - need additional description and place
