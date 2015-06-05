@@ -25,6 +25,10 @@ type Clerr struct {
 	Details interface {}	`json:"details"`
 }
 
-func (clerr *Clerr) ToJson() ([]byte, error) {
+func (clerr Clerr) ToJson() ([]byte, error) {
     return json.Marshal(clerr)
+}
+
+func (clerr Clerr) Error() string {
+	return "client error: " + clerr.ErrKey
 }
