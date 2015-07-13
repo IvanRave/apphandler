@@ -2,11 +2,50 @@ package apphandler
 
 import (
     "fmt"
+	"log"
+//	"time"
+//	"reflect"
+	"io/ioutil"
+	"strings"
 	"net/http"
 	"encoding/json"
+
+	//"encoding/base64"
+
+	jwt "github.com/dgrijalva/jwt-go"
 )
 
 const JSON_MIME string = "application/json; charset=utf-8"
+
+// singleton property
+var publicKey []byte
+
+func init() {
+
+	// openssl genrsa -out demo.rsa 1024 # the 1024 is the size of the key we are generating
+    // openssl rsa -in demo.rsa -pubout > demo.rsa.pub
+	pblKey, errReadKey := ioutil.ReadFile("/opt/jauth/jkey.rsa.pub")
+
+	if errReadKey != nil {
+		log.Fatal(errReadKey)
+	}
+
+	publicKey = pblKey
+}
+
+func cbkJwtParse(token *jwt.Token) (interface{}, error) {
+
+	// Don't forget to validate the alg is what you expect:
+	if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+
+		return nil, fmt.Errorf("Unexpected signing method: %v",
+			token.Header["alg"])
+
+	} else {
+		return publicKey, nil
+	}
+	//myLookupKey(token.Header["kid"])
+}
 
 // Send 400 or 422 response (or something, different
 //   than right response)
@@ -24,7 +63,13 @@ func handleClientError(w http.ResponseWriter, err IClerr){
 	w.Write([]byte(str))
 }
 
-// handleServerError writes error to client and send a notif to admin
+func handleNonAuth(w http.ResponseWriter, str string){
+	w.WriteHeader(401)
+	w.Write([]byte(str))
+}
+
+// handleServerError writes error to client
+// and sends a notif to admin
 func handleServerError(w http.ResponseWriter,
 	err error){
 	
@@ -49,9 +94,8 @@ func handleSuccess(w http.ResponseWriter, rdata interface{}){
     	//w.Write([]byte("sdf"))
 	    //w.WriteHeader(http.StatusNoContent)
 	    //
+		// just header: no content
 	    w.WriteHeader(204) // no content type
-		// HTTP 500
-    	//w.Write([]byte("Hello123!"))
 	    return
     }   
 	
@@ -74,6 +118,25 @@ func handleSuccess(w http.ResponseWriter, rdata interface{}){
     w.Write([]byte(string(responseJson)))
 }
 
+func calcApiKey(hdr http.Header) string {
+	// get Authorization and authorization and other forms
+	authHeader := hdr.Get("Authorization")
+	if authHeader != "" {
+		// extract Bearer
+		arrStr := strings.Split(authHeader, " ")
+
+		if len(arrStr) == 2 {
+			if strings.ToLower(arrStr[0]) == "bearer" {
+				if arrStr[1] != "" {
+					return arrStr[1];
+				}
+			}
+		}
+	}
+	
+	return ""
+}
+
 func addAccessControl(w http.ResponseWriter, r *http.Request) {
 	
 	// check cors requests
@@ -88,12 +151,22 @@ func addAccessControl(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Decode JWT specific base64url encoding with padding stripped
+// func DecodeSegment(seg string) ([]byte, error) {
+// 	if l := len(seg) % 4; l > 0 {
+// 		seg += strings.Repeat("=", 4-l)
+// 	}
+	
+// 	return base64.URLEncoding.DecodeString(seg)
+// }
 
 // appHandler
 // func as a paramter
 // error as a result
 // Result - a map (will be converted to json/othertype to send to user
-type AppHandlerType func(map[string]string) (interface{}, error)
+type AppHandlerType func(map[string]string, int32, int32) (
+	interface{},
+	error)
 
 // ServeHTTP implements Handler interface
 // Param ah - data of appHandlerType instead Handler type
@@ -117,13 +190,13 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 	// body or url params - body in priority
 	inParams := BeautyMap(r.Form)
 	
-	// Returned format stores in url parameter (not in Accept header)
+	// Returned format stores in url parameter
+	// (not in Accept header)
 	//acceptTypes := r.Header["Accept"]
 
 	
 	// Log a request
-	fmt.Printf("inParams: %v", inParams)
-	fmt.Println()
+
 
 	// 3. AUTH middleware
 	// - check auth-token
@@ -133,7 +206,110 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 	
 	// TODO: #33! Convert r.Form to normal map (without arrays)
 	// all arrays will be sended, using _ divider in one param
-	// like favarr=123_234_2345&otherparam=123
+	// like favarr=123_234_2345&otherparam=123	
+	
+	apiKey := calcApiKey(r.Header);
+
+	// user id: calc from apiKey
+	var uid int32 = 0
+	var perms int32 = 0
+	// Check apiKey for all requests (even for non-authed)
+	// a client sends a token only for authed requests
+	if apiKey != "" {
+		//fmt.Printf("apiKey: %v", apiKey)
+		//fmt.Println()
+
+		tkn, err := jwt.Parse(apiKey, cbkJwtParse)
+
+		// Check expired time: automatically inside jwt library
+		// https://github.com/dgrijalva/jwt-go/blob/master/jwt.go#L140
+		if err != nil {
+			if err.Error() == "token is expired" {
+				handleNonAuth(w, "authTokenIsExpired")
+				return
+			}
+			
+			fmt.Println(err)
+			handleServerError(w, err)
+			return
+		}
+
+
+		if tkn.Valid == false {
+			// handle 401 response
+			handleNonAuth(w, "authTokenIsInvalid")
+			return
+		}
+
+		if uidFloat, isUid := tkn.Claims["uid"].(float64);
+		isUid == false {	
+			handleNonAuth(w, "authTokenUidIsEmpty")
+			return
+		} else {
+			// only int32 supported for UID
+			uid = int32(uidFloat)
+		}
+
+		if permsFloat, isPerms := tkn.Claims["perms"].(float64);
+		isPerms == false {	
+			handleNonAuth(w, "authTokenPermsIsEmpty")
+			return
+		} else {
+			// only int32 supported for PERMS
+			perms = int32(permsFloat)
+		}
+		
+		// if expClaim, okExpClaim := tkn.Claims["exp"];
+		// okExpClaim == false {
+		// 	handleNonAuth(w, "expTimeInvalid")
+		// 	return
+		// } else {			
+			
+		// 	fmt.Println(reflect.TypeOf(expClaim))
+
+		// 	if expUnix, okExpUnix := expClaim.(float64);
+		// 	okExpUnix == false {
+		// 		handleNonAuth(w, "expTimeIsNotUnixTime")
+		// 		return
+		// 	} else {
+			
+		// 		// if expUnix > time.Now().Unix() {
+		// 		// 	handleNonAuth(w, "authTokenIsExpired")
+		// 		// 	return
+		// 		// }
+			
+		// 		fmt.Println(expUnix)
+		// 	}
+		// }
+		
+
+		
+		
+		//parts := strings.Split(tkn.Raw, ".")
+
+		//dcd, _ := DecodeSegment(parts[1])
+		//fmt.Println(string(dcd))
+
+		// exp: int64 unixtimestamp
+	}
+	// fmt.Printf("ok %v", ok)
+	// fmt.Println()
+
+	// okApiKey equals false if empty parameter: &api_key=
+	// if okApiKey == true {
+	// 	// type: string
+	// 	// GET FROM AuthHeader
+	// 	fmt.Printf("APIKEY: %v", apiKey)
+	// 	fmt.Println()
+	// 	delete(inParams, "api_key")
+	// }
+	
+	// translate apiKey to userId + perms (roles)
+	// from JWT or TableSession
+	// define perms from DB or JWT?
+	// Are perms can be different per sessions?
+	// To get perms from DB - DB perms required (cycle)
+	
 	
 	// Execute required function
 	// If errors occured - return error to client
@@ -142,10 +318,12 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 	// - check permScope, if required
 	// - check inParams
 	// - execute main methods
-	rdata, errApp := ah(inParams);
+	// ? nil or int32 = 0
+
 
 	// 5. RESULT middleware
-	if errApp != nil {
+	if 	rdata, errApp := ah(inParams, uid, perms);
+	errApp != nil {
 		if clerrApp, ok := errApp.(*Clerr); ok {
 			// 4xx (422)
 			handleClientError(w, clerrApp)
@@ -156,7 +334,20 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 	} else {
 		// 2xx (200, 204)
 		handleSuccess(w, rdata)
-	}	
+	}
+
+	// Logging (after execution)
+	fmt.Printf("URL: %v", r.URL)
+	fmt.Println()
+	
+	fmt.Printf("PARAMS: %v", inParams)
+	fmt.Println()
+
+	fmt.Printf("UID: %v", uid)
+	fmt.Println()
+	
+	fmt.Printf("PERMS: %v", perms)
+	fmt.Println()
 }
 
 // if  errServer != nil {
