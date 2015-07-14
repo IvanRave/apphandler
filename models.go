@@ -43,10 +43,27 @@ func ErrValidation(details interface{}) (*clerr) {
 }
 
 // if no perms
-func ErrAccess(details string) (*clerr){
+func ErrPerms(userPerms int32, requiredPerms int32) (*clerr){
 	return &clerr {
-		ErrKey: "accessError",
-		Details: details,
+		ErrKey: "permissionError",
+		Details: map[string]int32 {
+			"perms": userPerms,
+			"required_perms": requiredPerms,
+		},
+	}
+}
+
+// uid and perms can be viewed in JWT token payload
+// required uid - in query
+// required perms - client info (to request required perms
+//     after unsuccessful result)
+func ErrUid(uid int32, requiredUid int32) (*clerr){
+	return &clerr {
+		ErrKey: "permissionError",
+		Details: map[string]int32 {
+			"uid": uid,
+			"required_uid": requiredUid,
+		},
 	}
 }
 
