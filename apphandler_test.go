@@ -33,7 +33,7 @@ const tkn4 string = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE0Mzc5OTkxMz
 const tkn1 string = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE0Mzc5OTcyOTIsInVpZCI6OTg3fQ.uW9KbN8iau53rKPXz7iqu0RZvlFy_xLVLp6bbK_yBxJ7k7mPhUo1FrkzxkO4D1e39S-hy8D-s5lVyPkQcJ49-4pnsaVq9xxqTMwJz3vPlojHbxMYcf-1mMsbPQpTMY3JSvmjDloPSWfXUK-6PTq7xcSGh4b6i0ejqyYQlBWc63M"
 
 // expired token
-const tkn2 string = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE0MzU0OTUwMzAsInVpZCI6OTg3fQ.u1oDtdLAW8pCdTbfm0ZxiwwO8g5StCks5gQ28HJSDYPP3c9VUdAq6MR33gjnv7dKBEsJFdHeb0e5giVq99L7cUC-izc1pKnQcZAfCnXCEr9CptZqyTDxebm3bNv5wVSua2ARsmjUs45SSmaq1_CxURxPU846_6gzcpHxV5nb7wA"
+const tknExpired string = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE0MzU0OTUwMzAsInVpZCI6OTg3fQ.u1oDtdLAW8pCdTbfm0ZxiwwO8g5StCks5gQ28HJSDYPP3c9VUdAq6MR33gjnv7dKBEsJFdHeb0e5giVq99L7cUC-izc1pKnQcZAfCnXCEr9CptZqyTDxebm3bNv5wVSua2ARsmjUs45SSmaq1_CxURxPU846_6gzcpHxV5nb7wA"
 
 // without UID claim
 const tkn3 string = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE0Mzc5OTc1NjZ9.FcYNmHw3f6ws7_Yja20vRUX4EPVzUsrOpLHNqIMCNaCgrhRMGIS7UnsC_8ySiVsBes5NBfbACePznbTxoQlrOCiHXpgPtU33YI9ZJgdxGe1p6a9GJi8j15t6RzAqcxTEB_I7CaDNrIcQJt1tF0JCWCE43V1GuW5hEKMMyMnD8oE"
@@ -95,7 +95,7 @@ func Example(){
 		"http://localhost?id=123",
 		nil)
 
-	r.Header.Add("Authorization", "Bearer " + tkn4)
+	r.Header.Add("Authorization", "Bearer " + tknExpired)
 
 	demoAht.ServeHTTP(w, r)
 	

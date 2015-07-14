@@ -2,7 +2,8 @@ package apphandler
 
 import (
     "fmt"
-	"log"
+	"os"
+//	"log"
 //	"time"
 //	"reflect"
 	"io/ioutil"
@@ -11,8 +12,9 @@ import (
 	"encoding/json"
 
 	//"encoding/base64"
-
 	jwt "github.com/dgrijalva/jwt-go"
+
+	lgr	"github.com/Sirupsen/logrus"
 )
 
 const JSON_MIME string = "application/json; charset=utf-8"
@@ -21,14 +23,17 @@ const JSON_MIME string = "application/json; charset=utf-8"
 var publicKey []byte
 
 func init() {
-
+	lgr.SetFormatter(&lgr.JSONFormatter{})
+	lgr.SetOutput(os.Stderr)
 	// openssl genrsa -out demo.rsa 1024 # the 1024 is the size of the key we are generating
     // openssl rsa -in demo.rsa -pubout > demo.rsa.pub
 	pblKey, errReadKey := ioutil.ReadFile("/opt/jauth/jkey.rsa.pub")
-
+	
 	if errReadKey != nil {
-		log.Fatal(errReadKey)
-	}
+		lgr.Fatal(errReadKey)
+		// calls os.Exit(1) after logging
+		return
+	}	
 
 	publicKey = pblKey
 }
@@ -63,9 +68,16 @@ func handleClientError(w http.ResponseWriter, err IClerr){
 	w.Write([]byte(str))
 }
 
-func handleNonAuth(w http.ResponseWriter, str string){
+func handleNonAuth(w http.ResponseWriter,
+	str string,
+	apiKey string){
+	
 	w.WriteHeader(401)
 	w.Write([]byte(str))
+	lgr.WithFields(lgr.Fields {
+		"err_key": str,
+		"api_key": apiKey,
+	}).Warn("Error401")
 }
 
 // handleServerError writes error to client
@@ -83,9 +95,11 @@ func handleServerError(w http.ResponseWriter,
 	w.Header().Set("Content-Type", JSON_MIME)
 	w.WriteHeader(500)
 	w.Write(bstr)
+
+	lgr.WithFields(lgr.Fields{
+		"err": err,
+	}).Error("ServerError")
 	
-	fmt.Printf("systemError %v", err)
-	fmt.Println()
 	// TODO: #33! Send an error to admin
 }
 
@@ -197,7 +211,6 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 	
 	// Log a request
 
-
 	// 3. AUTH middleware
 	// - check auth-token
 	// - transform it to permScope (if exists)
@@ -216,8 +229,6 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 	// Check apiKey for all requests (even for non-authed)
 	// a client sends a token only for authed requests
 	if apiKey != "" {
-		//fmt.Printf("apiKey: %v", apiKey)
-		//fmt.Println()
 
 		tkn, err := jwt.Parse(apiKey, cbkJwtParse)
 
@@ -225,11 +236,10 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 		// https://github.com/dgrijalva/jwt-go/blob/master/jwt.go#L140
 		if err != nil {
 			if err.Error() == "token is expired" {
-				handleNonAuth(w, "authTokenIsExpired")
+				handleNonAuth(w, "authTokenIsExpired", apiKey)
 				return
 			}
 			
-			fmt.Println(err)
 			handleServerError(w, err)
 			return
 		}
@@ -237,13 +247,13 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 
 		if tkn.Valid == false {
 			// handle 401 response
-			handleNonAuth(w, "authTokenIsInvalid")
+			handleNonAuth(w, "authTokenIsInvalid", apiKey)
 			return
 		}
 
 		if uidFloat, isUid := tkn.Claims["uid"].(float64);
 		isUid == false {	
-			handleNonAuth(w, "authTokenUidIsEmpty")
+			handleNonAuth(w, "authTokenUidIsEmpty", apiKey)
 			return
 		} else {
 			// only int32 supported for UID
@@ -252,57 +262,20 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 
 		if permsFloat, isPerms := tkn.Claims["perms"].(float64);
 		isPerms == false {	
-			handleNonAuth(w, "authTokenPermsIsEmpty")
+			handleNonAuth(w, "authTokenPermsIsEmpty", apiKey)
 			return
 		} else {
 			// only int32 supported for PERMS
 			perms = int32(permsFloat)
 		}
 		
-		// if expClaim, okExpClaim := tkn.Claims["exp"];
-		// okExpClaim == false {
-		// 	handleNonAuth(w, "expTimeInvalid")
-		// 	return
-		// } else {			
-			
-		// 	fmt.Println(reflect.TypeOf(expClaim))
-
-		// 	if expUnix, okExpUnix := expClaim.(float64);
-		// 	okExpUnix == false {
-		// 		handleNonAuth(w, "expTimeIsNotUnixTime")
-		// 		return
-		// 	} else {
-			
-		// 		// if expUnix > time.Now().Unix() {
-		// 		// 	handleNonAuth(w, "authTokenIsExpired")
-		// 		// 	return
-		// 		// }
-			
-		// 		fmt.Println(expUnix)
-		// 	}
-		// }
-		
-
-		
-		
 		//parts := strings.Split(tkn.Raw, ".")
 
 		//dcd, _ := DecodeSegment(parts[1])
-		//fmt.Println(string(dcd))
+
 
 		// exp: int64 unixtimestamp
 	}
-	// fmt.Printf("ok %v", ok)
-	// fmt.Println()
-
-	// okApiKey equals false if empty parameter: &api_key=
-	// if okApiKey == true {
-	// 	// type: string
-	// 	// GET FROM AuthHeader
-	// 	fmt.Printf("APIKEY: %v", apiKey)
-	// 	fmt.Println()
-	// 	delete(inParams, "api_key")
-	// }
 	
 	// translate apiKey to userId + perms (roles)
 	// from JWT or TableSession
@@ -337,17 +310,12 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 	}
 
 	// Logging (after execution)
-	fmt.Printf("URL: %v", r.URL)
-	fmt.Println()
-	
-	fmt.Printf("PARAMS: %v", inParams)
-	fmt.Println()
-
-	fmt.Printf("UID: %v", uid)
-	fmt.Println()
-	
-	fmt.Printf("PERMS: %v", perms)
-	fmt.Println()
+	lgr.WithFields(lgr.Fields{
+		"url": r.URL,
+		"uid": uid,
+		"params": inParams,
+		"perms": perms,
+	}).Info("request data")
 }
 
 // if  errServer != nil {
