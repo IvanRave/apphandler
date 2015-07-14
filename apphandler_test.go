@@ -27,7 +27,7 @@ func (rw RW) WriteHeader(status int) {
 }
 
 // with a PERMS claim
-const tkn4 string = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE0Mzc5OTkxMzksInBlcm1zIjoyNTYsInVpZCI6OTg3fQ.Z8edmhin7OP65twZIurNkJbMM44RcHvz3VRjhWOmW2sL453AxspAm4dVF5tBGKD2V3EA3yd5K4iqoC8Yqe8gNRY9NR_kJHeaMMgukWy94krDZjAGmhYrbFgE35YwzA9AxfgCE_qP9GmMfHDE-f_YBsI1vCmOjJvgk9EwKShR71Q"
+const tknPerms string = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE0Mzc5OTkxMzksInBlcm1zIjoyNTYsInVpZCI6OTg3fQ.Z8edmhin7OP65twZIurNkJbMM44RcHvz3VRjhWOmW2sL453AxspAm4dVF5tBGKD2V3EA3yd5K4iqoC8Yqe8gNRY9NR_kJHeaMMgukWy94krDZjAGmhYrbFgE35YwzA9AxfgCE_qP9GmMfHDE-f_YBsI1vCmOjJvgk9EwKShR71Q"
 
 // actual token
 const tkn1 string = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE0Mzc5OTcyOTIsInVpZCI6OTg3fQ.uW9KbN8iau53rKPXz7iqu0RZvlFy_xLVLp6bbK_yBxJ7k7mPhUo1FrkzxkO4D1e39S-hy8D-s5lVyPkQcJ49-4pnsaVq9xxqTMwJz3vPlojHbxMYcf-1mMsbPQpTMY3JSvmjDloPSWfXUK-6PTq7xcSGh4b6i0ejqyYQlBWc63M"
@@ -84,6 +84,7 @@ func Example(){
 			// fmt.Println(reqParams)
 			// fmt.Println(uid)
 			return nil, nil
+			//ErrAccess("superdetails")
 			//return "resultAsAString", nil
 		}
 	
@@ -95,14 +96,12 @@ func Example(){
 		"http://localhost?id=123",
 		nil)
 
-	r.Header.Add("Authorization", "Bearer " + tknExpired)
+	r.Header.Add("Authorization", "Bearer " +
+		tknPerms)
+		//tknExpired)
 
 	demoAht.ServeHTTP(w, r)
 	
 	//Output:
 	// RESULT: statusCode: 204
-	// URL: http://localhost?id=123
-	// PARAMS: map[id:123]
-	// UID: 987
-	// PERMS: 256	
 }

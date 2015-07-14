@@ -17,7 +17,7 @@ import (
 	lgr	"github.com/Sirupsen/logrus"
 )
 
-const JSON_MIME string = "application/json; charset=utf-8"
+const jsonMime string = "application/json; charset=utf-8"
 
 // singleton property
 var publicKey []byte
@@ -54,7 +54,7 @@ func cbkJwtParse(token *jwt.Token) (interface{}, error) {
 
 // Send 400 or 422 response (or something, different
 //   than right response)
-func handleClientError(w http.ResponseWriter, err IClerr){
+func handleClientError(w http.ResponseWriter, err *clerr){
 	
 	str, parseErr := err.ToJson()
 	
@@ -63,7 +63,7 @@ func handleClientError(w http.ResponseWriter, err IClerr){
 		return
 	}
 
-	w.Header().Set("Content-Type", JSON_MIME)
+	w.Header().Set("Content-Type", jsonMime)
 	w.WriteHeader(422)
 	w.Write([]byte(str))
 }
@@ -85,21 +85,20 @@ func handleNonAuth(w http.ResponseWriter,
 func handleServerError(w http.ResponseWriter,
 	err error){
 	
-	clerr := Clerr {
+	clerr := clerr {
 		ErrKey: "unexpectedError",
 		//Details: nil
 	}
 	
 	bstr, _ := clerr.ToJson()
 
-	w.Header().Set("Content-Type", JSON_MIME)
+	w.Header().Set("Content-Type", jsonMime)
 	w.WriteHeader(500)
 	w.Write(bstr)
 
 	lgr.WithFields(lgr.Fields{
 		"err": err,
-	}).Error("ServerError")
-	
+	}).Error("ServerError")	
 	// TODO: #33! Send an error to admin
 }
 
@@ -128,7 +127,7 @@ func handleSuccess(w http.ResponseWriter, rdata interface{}){
     // Content-Type line, Write adds a Content-Type
 	//    set to the result of passing
     // the initial 512 bytes of written data to DetectContentType
-	w.Header().Set("Content-Type", JSON_MIME)
+	w.Header().Set("Content-Type", jsonMime)
     w.Write([]byte(string(responseJson)))
 }
 
@@ -297,9 +296,13 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 	// 5. RESULT middleware
 	if 	rdata, errApp := ah(inParams, uid, perms);
 	errApp != nil {
-		if clerrApp, ok := errApp.(*Clerr); ok {
-			// 4xx (422)
-			handleClientError(w, clerrApp)
+		if clerrApp, ok := errApp.(*clerr); ok {
+			if clerrApp.ErrKey == "authError" {
+				handleNonAuth(w, "auth required", "")
+			} else {			
+				// 4xx (422)
+				handleClientError(w, clerrApp)
+			}
 		}else {
 			// 5xx (500)
 			handleServerError(w, errApp)

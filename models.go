@@ -16,21 +16,59 @@ import "encoding/json"
 
 // IClerr - interface, like error but only for client error 
 // (opposite of server errors)
-type IClerr interface {
-	ToJson() ([]byte, error)
-}
+// type IClerr interface {
+// 	ToJson() ([]byte, error)
+// }
 
-type Clerr struct {
-	ErrKey string			`json:"errkey"`
+type clerr struct {
+	ErrKey string   		`json:"errkey"`
 	Details interface {}	`json:"details"`
 }
 
 // IClerr interface
-func (clerr Clerr) ToJson() ([]byte, error) {
-    return json.Marshal(clerr)
+func (appClerr clerr) ToJson() ([]byte, error) {
+    return json.Marshal(appClerr)
 }
 
 // error interface
-func (clerr Clerr) Error() string {
-	return "client error: " + clerr.ErrKey
+func (appClerr clerr) Error() string {
+	return "client error: " + string(appClerr.ErrKey)
 }
+
+func ErrValidation(details interface{}) (*clerr) {
+	return &clerr {
+		ErrKey: "validationError",
+		Details: details,
+	}
+}
+
+// if no perms
+func ErrAccess(details string) (*clerr){
+	return &clerr {
+		ErrKey: "accessError",
+		Details: details,
+	}
+}
+
+func ErrDuplicateKey(propName string) (*clerr){
+	return &clerr {
+		ErrKey: "duplicateKeyError",
+		Details: map[string]string {
+			"property": propName,
+		},
+	}
+}
+
+func ErrForeignKey(propName string) (*clerr){
+	return &clerr {
+		ErrKey: "foreignKeyError",
+		Details: map[string]string {
+			"property": propName,
+		},
+	}
+}
+
+// noSuchServRubric
+// nstgIdIsEmpty
+// masterProfileIsNotFound
+// noAccess
