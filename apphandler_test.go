@@ -1,9 +1,11 @@
 package apphandler
 
 import (
+	"os"
 	"fmt"
 //	"reflect"
 	"net/http"
+	lgr	"github.com/Sirupsen/logrus"
 )
 
 // interface of ResponseWriter
@@ -75,6 +77,19 @@ const (
 
 
 func Example(){
+
+	// usually it defines in global Main script
+	lgr.SetFormatter(&lgr.JSONFormatter{})
+
+	f, err := os.OpenFile("app.log", os.O_WRONLY | os.O_CREATE, 0755)
+	if err != nil {
+		return
+	}
+
+	defer f.Close()
+	
+	lgr.SetOutput(f)
+	
 	//fmt.Println(reflect.TypeOf(q30))
 	ctrlFunc := func(reqParams map[string]string,
 		uid int32, perms int32) (interface{}, error){
@@ -104,4 +119,5 @@ func Example(){
 	
 	//Output:
 	// RESULT: statusCode: 204
+	// asdf
 }

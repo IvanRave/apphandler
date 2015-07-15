@@ -2,7 +2,6 @@ package apphandler
 
 import (
     "fmt"
-	"os"
 //	"log"
 //	"time"
 //	"reflect"
@@ -23,8 +22,7 @@ const jsonMime string = "application/json; charset=utf-8"
 var publicKey []byte
 
 func init() {
-	lgr.SetFormatter(&lgr.JSONFormatter{})
-	lgr.SetOutput(os.Stderr)
+
 	// openssl genrsa -out demo.rsa 1024 # the 1024 is the size of the key we are generating
     // openssl rsa -in demo.rsa -pubout > demo.rsa.pub
 	pblKey, errReadKey := ioutil.ReadFile("/opt/jauth/jkey.rsa.pub")
@@ -66,6 +64,10 @@ func handleClientError(w http.ResponseWriter, err *clerr){
 	w.Header().Set("Content-Type", jsonMime)
 	w.WriteHeader(422)
 	w.Write([]byte(str))
+	
+	lgr.WithFields(lgr.Fields{
+		"err": str,
+	}).Warn("ClientError")	
 }
 
 func handleNonAuth(w http.ResponseWriter,
@@ -313,11 +315,11 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 
 	// Logging (after execution)
 	lgr.WithFields(lgr.Fields{
-		"url": r.URL,
+		"url": r.URL.String(),
 		"uid": uid,
 		"params": inParams,
 		"perms": perms,
-	}).Info("request data")
+	}).Info("rqst")
 }
 
 // if  errServer != nil {
