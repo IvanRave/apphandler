@@ -178,8 +178,7 @@ func addAccessControl(w http.ResponseWriter, r *http.Request) {
 // error as a result
 // Result - a map (will be converted to json/othertype to send to user
 type AppHandlerType func(map[string]string, int32, int32) (
-	interface{},
-	error)
+	interface{}, error)
 
 // ServeHTTP implements Handler interface
 // Param ah - data of appHandlerType instead Handler type
