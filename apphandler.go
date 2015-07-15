@@ -296,8 +296,8 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 	if 	rdata, errApp := ah(inParams, uid, perms);
 	errApp != nil {
 		if clerrApp, ok := errApp.(*clerr); ok {
-			if clerrApp.ErrKey == "authError" {
-				handleNonAuth(w, "auth required", "")
+			if clerrApp.ErrKey == "permissionError" {
+				handleNonAuth(w, "notEnoughPermissions", "")
 			} else {			
 				// 4xx (422)
 				handleClientError(w, clerrApp)
