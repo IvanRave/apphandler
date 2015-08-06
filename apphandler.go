@@ -152,19 +152,19 @@ func calcApiKey(hdr http.Header) string {
 	return ""
 }
 
-func addAccessControl(w http.ResponseWriter, r *http.Request) {
+// func addAccessControl(w http.ResponseWriter, r *http.Request) {
 	
-	// check cors requests
-	if origin := r.Header.Get("Origin"); origin != "" {
-		w.Header().Set("Access-Control-Allow-Origin", origin)
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
-		//, PUT, DELETE
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Accept, Authorization")
-		//X-CSRF-Token,  Content-Length, Accept-Encoding, Authorization			
-		// Non-simple requests
-		// http://stackoverflow.com/questions/10636611/how-does-access-control-allow-origin-header-work
-	}
-}
+// 	// check cors requests
+// 	if origin := r.Header.Get("Origin"); origin != "" {
+// 		w.Header().Set("Access-Control-Allow-Origin", origin)
+// 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+// 		//, PUT, DELETE
+// 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Accept, Authorization")
+// 		//X-CSRF-Token,  Content-Length, Accept-Encoding, Authorization			
+// 		// Non-simple requests
+// 		// http://stackoverflow.com/questions/10636611/how-does-access-control-allow-origin-header-work
+// 	}
+// }
 
 // Decode JWT specific base64url encoding with padding stripped
 // func DecodeSegment(seg string) ([]byte, error) {
@@ -187,12 +187,15 @@ type AppHandlerType func(map[string]string, int32, int32) (
 func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 	r *http.Request) {
 
-	addAccessControl(w, r)
+	// access only from localhost (nginx)
+	// headers moved to nginx
+	//addAccessControl(w, r)
 	
 	// Stop here if its Preflighted OPTIONS request
-	if r.Method == "OPTIONS" {
-		return
-	}
+	// move to nginx
+	//if r.Method == "OPTIONS" {
+	//	return
+	//}
 
 	// 2. PARSE middleware
 	parseErr := r.ParseForm()
@@ -261,7 +264,7 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 		}
 
 		if permsFloat, isPerms := tkn.Claims["perms"].(float64);
-		isPerms == false {	
+		isPerms == false {
 			handleNonAuth(w, "authTokenPermsIsEmpty", apiKey)
 			return
 		} else {
