@@ -63,10 +63,10 @@ func handleClientError(w http.ResponseWriter, err *clerr){
 
 	w.Header().Set("Content-Type", jsonMime)
 	w.WriteHeader(422)
-	w.Write([]byte(str))
+	w.Write(str)
 	
 	lgr.WithFields(lgr.Fields{
-		"err": str,
+		"err": string(str),
 	}).Warn("ClientError")	
 }
 

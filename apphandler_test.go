@@ -118,6 +118,6 @@ func Example(){
 	demoAht.ServeHTTP(w, r)
 	
 	//Output:
-	// RESULT: statusCode: 204
-	// asdf
+	// RESULT: statusCode: 401
+	// authTokenIsExpired
 }
