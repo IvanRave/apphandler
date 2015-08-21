@@ -323,15 +323,15 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 		handleSuccess(w, rdata)
 	}
 
-	strParams, errParams := json.Marshal(inParams)
+	// strParams, errParams := json.Marshal(inParams)
 	
-	if errParams != nil {
-		lgr.WithFields(lgr.Fields{
-			"tag": "byt.app",
-			"msg": errParams.Error(),
-			"dscr": "try parse inParams",
-		}).Warn();
-	}
+	// if errParams != nil {
+	// 	lgr.WithFields(lgr.Fields{
+	// 		"tag": "byt.app",
+	// 		"msg": errParams.Error(),
+	// 		"dscr": "try parse inParams",
+	// 	}).Warn();
+	// }
 	
 	// Logging (after execution)
 	lgr.WithFields(lgr.Fields{
@@ -339,7 +339,7 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 		"msg": "rqst",
 		"url": r.URL.String(),
 		"uid": uid,
-		"params": strParams,
+		//"params": strParams,
 		"perms": perms,
 	}).Info()
 }
