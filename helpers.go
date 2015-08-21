@@ -3,6 +3,8 @@ package apphandler
 import (
     //"fmt"  
     //"regexp"
+	"strings"
+	"net/http"	
 )
 
 // Compile the expression once, usually at init time.
@@ -36,4 +38,23 @@ func BeautyMap(qwe map[string][]string) (map[string]string) {
 	}
 
 	return res
+}
+
+func calcApiKey(hdr http.Header) string {
+	// get Authorization and authorization and other forms
+	authHeader := hdr.Get("Authorization")
+	if authHeader != "" {
+		// extract Bearer
+		arrStr := strings.Split(authHeader, " ")
+
+		if len(arrStr) == 2 {
+			if strings.ToLower(arrStr[0]) == "bearer" {
+				if arrStr[1] != "" {
+					return arrStr[1];
+				}
+			}
+		}
+	}
+	
+	return ""
 }
