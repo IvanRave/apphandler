@@ -28,7 +28,10 @@ func init() {
 	pblKey, errReadKey := ioutil.ReadFile("/opt/jauth/jkey.rsa.pub")
 	
 	if errReadKey != nil {
-		lgr.Fatal(errReadKey)
+		lgr.WithFields(lgr.Fields{
+			"tag": "byt.app",
+			"msg": errReadKey.Error(),
+		}).Fatal()
 		// calls os.Exit(1) after logging
 		return
 	}	
@@ -66,8 +69,9 @@ func handleClientError(w http.ResponseWriter, err *clerr){
 	w.Write(str)
 	
 	lgr.WithFields(lgr.Fields{
-		"err": string(str),
-	}).Warn("ClientError")	
+		"tag": "byt.clerr",
+		"msg": string(str),
+	}).Warn()	
 }
 
 func handleNonAuth(w http.ResponseWriter,
@@ -77,9 +81,11 @@ func handleNonAuth(w http.ResponseWriter,
 	w.WriteHeader(401)
 	w.Write([]byte(str))
 	lgr.WithFields(lgr.Fields {
+		"tag": "byt.clerr",
+		"msg": "nonauth",
 		"err_key": str,
 		"api_key": apiKey,
-	}).Warn("Error401")
+	}).Warn()
 }
 
 // handleServerError writes error to client
@@ -99,8 +105,9 @@ func handleServerError(w http.ResponseWriter,
 	w.Write(bstr)
 
 	lgr.WithFields(lgr.Fields{
-		"err": err,
-	}).Error("ServerError")	
+		"tag": "byt.sverr",
+		"msg": err.Error(),
+	}).Error()
 	// TODO: #33! Send an error to admin
 }
 
@@ -318,11 +325,13 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 
 	// Logging (after execution)
 	lgr.WithFields(lgr.Fields{
+		"tag": "byt.rqst",
+		"msg": "rqst",
 		"url": r.URL.String(),
 		"uid": uid,
 		"params": inParams,
 		"perms": perms,
-	}).Info("rqst")
+	}).Info()
 }
 
 // if  errServer != nil {
