@@ -16,6 +16,9 @@ import (
 	lgr	"github.com/Sirupsen/logrus"
 )
 
+const tagRqst string = "byt.rqst"
+const tagApp string = "byt.app"
+
 const jsonMime string = "application/json; charset=utf-8"
 
 // singleton property
@@ -29,7 +32,7 @@ func init() {
 	
 	if errReadKey != nil {
 		lgr.WithFields(lgr.Fields{
-			"tag": "byt.app",
+			"tag": tagApp,
 			"msg": errReadKey.Error(),
 		}).Fatal()
 		// calls os.Exit(1) after logging
@@ -69,9 +72,9 @@ func handleClientError(w http.ResponseWriter, err *clerr){
 	w.Write(str)
 	
 	lgr.WithFields(lgr.Fields{
-		"tag": "byt.clerr",
+		"tag": tagRqst,
 		"msg": string(str),
-	}).Warn()	
+	}).Warn()	// client error
 }
 
 func handleNonAuth(w http.ResponseWriter,
@@ -81,11 +84,11 @@ func handleNonAuth(w http.ResponseWriter,
 	w.WriteHeader(401)
 	w.Write([]byte(str))
 	lgr.WithFields(lgr.Fields {
-		"tag": "byt.clerr",
+		"tag": tagRqst,
 		"msg": "nonauth",
 		"err_key": str,
 		"api_key": apiKey,
-	}).Warn()
+	}).Warn() // client error = warn + rqst
 }
 
 // handleServerError writes error to client
@@ -105,9 +108,9 @@ func handleServerError(w http.ResponseWriter,
 	w.Write(bstr)
 
 	lgr.WithFields(lgr.Fields{
-		"tag": "byt.sverr",
+		"tag": tagRqst,
 		"msg": err.Error(),
-	}).Error()
+	}).Error() // server error + rqst
 	// TODO: #33! Send an error to admin
 }
 
@@ -327,7 +330,7 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 	
 	// if errParams != nil {
 	// 	lgr.WithFields(lgr.Fields{
-	// 		"tag": "byt.app",
+	// 		"tag": tagApp,
 	// 		"msg": errParams.Error(),
 	// 		"dscr": "try parse inParams",
 	// 	}).Warn();
@@ -335,13 +338,12 @@ func (ah AppHandlerType) ServeHTTP(w http.ResponseWriter,
 	
 	// Logging (after execution)
 	lgr.WithFields(lgr.Fields{
-		"tag": "byt.rqst",
-		"msg": "rqst",
-		"url": r.URL.String(),
+		"tag": tagRqst,
+		"msg": r.URL.String(),
 		"uid": uid,
 		//"params": strParams,
 		"perms": perms,
-	}).Info()
+	}).Info()  // rqst + info
 }
 
 // if  errServer != nil {
