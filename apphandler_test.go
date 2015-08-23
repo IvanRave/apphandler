@@ -119,5 +119,5 @@ func Example(){
 	
 	//Output:
 	// RESULT: statusCode: 401
-	// authTokenIsExpired
+	// {"errkey":"authTokenIsExpired","details":null}
 }
