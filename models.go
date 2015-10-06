@@ -35,6 +35,12 @@ func (appClerr clerr) Error() string {
 	return "client error: " + string(appClerr.ErrKey)
 }
 
+func ToClerr(someError error) (*clerr, bool) {
+	clerrApp, ok := someError.(*clerr)
+
+	return clerrApp, ok;
+}
+
 func ErrValidation(details interface{}) (*clerr) {
 	return &clerr {
 		ErrKey: "validationError",
