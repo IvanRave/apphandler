@@ -19,7 +19,7 @@ const jsonMime string = "application/json; charset=utf-8"
 // r.URL.String() 
 //    String reassembles the URL into a valid URL string
 
-func handleNonAuth(r *http.Request,
+func HandleNonAuth(r *http.Request,
 	w http.ResponseWriter,
 	errKey string,
 	apiKey string){
@@ -49,7 +49,7 @@ func handleNonAuth(r *http.Request,
 
 // handleServerError writes error to client
 // and sends a notif to admin
-func handleServerError(r *http.Request,
+func HandleServerError(r *http.Request,
 	w http.ResponseWriter,
 	err error){
 
@@ -80,14 +80,14 @@ func handleServerError(r *http.Request,
 
 // Send 400 or 422 response (or something, different
 //   than right response)
-func handleClientError(r *http.Request,
+func HandleClientError(r *http.Request,
 	w http.ResponseWriter,
 	err *clerr){
 	
 	str, parseErr := err.ToJson()
 	
 	if parseErr != nil {
-		handleServerError(r, w, parseErr)	
+		HandleServerError(r, w, parseErr)	
 		return
 	}
 
@@ -106,7 +106,7 @@ func handleClientError(r *http.Request,
 	}).Warn()	// client error
 }
 
-func handle204(r *http.Request,
+func Handle204(r *http.Request,
 	w http.ResponseWriter) {
 
 	statusCode := 204
@@ -129,19 +129,19 @@ func handle204(r *http.Request,
 	}).Info()  // rqst + info
 }
 
-func handleSuccess(r *http.Request,
+func HandleSuccess(r *http.Request,
 	w http.ResponseWriter,
 	rdata interface{}){
 
 	if rdata == nil {
-		handle204(r, w)
+		Handle204(r, w)
 		return
     }
 	
 	responseJson, errJson := json.Marshal(rdata)
 	
 	if errJson != nil {
-		handleServerError(r, w, errJson)
+		HandleServerError(r, w, errJson)
 		return
 	}
     

@@ -40,7 +40,7 @@ func BeautyMap(qwe map[string][]string) (map[string]string) {
 	return res
 }
 
-func calcApiKey(hdr http.Header) string {
+func CalcApiKey(hdr http.Header) string {
 	// get Authorization and authorization and other forms
 	authHeader := hdr.Get("Authorization")
 	if authHeader != "" {
