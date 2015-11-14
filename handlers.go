@@ -106,6 +106,26 @@ func HandleClientError(r *http.Request,
 	}).Warn()	// client error
 }
 
+func HandleNotFound(r *http.Request,
+	w http.ResponseWriter) {
+
+	statusCode := 404
+
+	w.WriteHeader(statusCode) // no content type
+
+	// Logging (after execution)
+	lgr.WithFields(lgr.Fields{
+		"tag": tagRqst,
+		"status_code": statusCode,
+		"err_key": "NotFoundError",
+		"msg": "notFound",
+		"url": r.URL.String(),
+		//"uid": uid,
+		//"params": strParams,
+		//"perms": perms,
+	}).Warn()  // rqst + info
+}
+
 func Handle204(r *http.Request,
 	w http.ResponseWriter) {
 

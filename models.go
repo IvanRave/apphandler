@@ -41,6 +41,7 @@ func ToClerr(someError error) (*clerr, bool) {
 	return clerrApp, ok;
 }
 
+// 422
 func ErrValidation(details interface{}) (*clerr) {
 	return &clerr {
 		ErrKey: "validationError",
@@ -48,7 +49,15 @@ func ErrValidation(details interface{}) (*clerr) {
 	}
 }
 
-// if no perms
+// 404
+func ErrNotFound(details interface{}) (*clerr){
+	return &clerr {
+		ErrKey: "notFoundError",
+		Details: details,
+	}
+}
+
+// if no perms 401
 func ErrPerms(userPerms int32, requiredPerms int32) (*clerr){
 	return &clerr {
 		ErrKey: "permissionError",
@@ -73,6 +82,7 @@ func ErrPerms(userPerms int32, requiredPerms int32) (*clerr){
 // 	}
 // }
 
+// 422
 func ErrDuplicateKey(propName string) (*clerr){
 	return &clerr {
 		ErrKey: "duplicateKeyError",
@@ -82,6 +92,7 @@ func ErrDuplicateKey(propName string) (*clerr){
 	}
 }
 
+// 422
 func ErrForeignKey(propName string) (*clerr){
 	return &clerr {
 		ErrKey: "foreignKeyError",
